@@ -7,6 +7,21 @@ CANVAS_MAX_WIDTH = 800
 CANVAS_MAX_HEIGHT = 500
 LINE_WIDTH = 3
 
+class App(tk.Frame):
+    def __init__(self, parent, controller, model: Model, *args, **kwargs) -> None:
+        tk.Frame.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+        self.controller = controller
+        self.model = model
+
+        self.grid = Grid(self)
+        self.grid.pack(side='left', fill='both')
+
+        ControlPanel(self).pack(side='right', padx=10, pady=10)
+
+    def update(self):
+        self.grid.draw()
+
 class Grid(tk.Frame):
     def __init__(self, parent) -> None:
         tk.Frame.__init__(self, parent)
@@ -24,9 +39,12 @@ class Grid(tk.Frame):
 
         self.draw()
 
+    # TODO: check what actually needs be drawn each step
     def draw(self):
-        self.draw_qtable()
+        self.canvas.delete('all')
+
         self.draw_tiles()
+        self.draw_agent()
         self.draw_grid()
 
     def draw_tiles(self):
@@ -44,8 +62,16 @@ class Grid(tk.Frame):
                 elif tile == 'A':
                     self.canvas.create_rectangle(x, y, x + self.cell_size, y + self.cell_size, fill='#F00')
 
-    def draw_qtable(self):
-        pass
+    def draw_agent(self):
+        agent = self.parent.model.agent
+        self.draw_figure(agent.y, agent.x, dash=None)
+        self.draw_figure(agent.prev_y, agent.prev_x, dash=(5, 3))
+
+    def draw_figure(self, y, x, dash):
+        center_x = (x + 0.5) * self.cell_size
+        center_y = (y + 0.5) * self.cell_size 
+        radius = self.cell_size * 0.3
+        self.canvas.create_oval(center_x - radius, center_y - radius, center_x + radius, center_y + radius, width=LINE_WIDTH * 2, outline='purple', dash=dash)
 
     def draw_grid(self) -> None:
         # outline
@@ -57,12 +83,12 @@ class Grid(tk.Frame):
             self.canvas.create_line(0, y, self.width, y, width=LINE_WIDTH)
 
         # draw horizontal lines
-            for i in range(1, self.n_cols):
-                x = i * self.cell_size
-                self.canvas.create_line(x, 0, x, self.height, width=LINE_WIDTH)
+        for i in range(1, self.n_cols):
+            x = i * self.cell_size
+            self.canvas.create_line(x, 0, x, self.height, width=LINE_WIDTH)
 
 class ControlPanel(tk.Frame):
-    def __init__(self, parent) -> None:
+    def __init__(self, parent: App) -> None:
         tk.Frame.__init__(self, parent)
         self.parent = parent
 
@@ -71,17 +97,16 @@ class ControlPanel(tk.Frame):
         # ttk.Label(self, text="Columns:").grid(row=0, column=2)
         # ttk.Entry(self).grid(row=0, column=3)
 
-        
+        next_step_button = ttk.Button(self, text="Next Step", command=self.parent.controller.next_step)
+        next_iter_button = ttk.Button(self, text="Next Iteration", command=lambda: self.parent.controller.execute_n_iterations(1))
+        next_thousand_button = ttk.Button(self, text="1000 Iteration", command=lambda: self.parent.controller.execute_n_iterations(1000))
 
 
+        ttk.Button(self, text="Show Q", command=lambda: print(self.parent.controller.model.agent.qtable)).pack()
+        ttk.Button(self, text="Show me baby", command=self.parent.controller.model.agent.reset_epsilon).pack()
 
-class App(tk.Frame):
-    def __init__(self, parent, controller, model: Model, *args, **kwargs) -> None:
-        tk.Frame.__init__(self, parent, *args, **kwargs)
-        self.parent = parent
-        self.controller = controller
-        self.model = model
 
-        Grid(self).pack(side='left', fill='both')
-        ControlPanel(self).pack(side='right', padx=10, pady=10)
+        next_step_button.pack(side='top')
+        next_iter_button.pack(side='top')
+        next_thousand_button.pack(side='top')
 
