@@ -23,12 +23,7 @@ class Agent:
         self.gamma = 0.5
         self.epsilon = 0.2
 
-    # TODO: delete me
-    def reset_epsilon(self):
-        if self.epsilon == 0.2:
-            self.epsilon = 0
-        else:
-            self.epsilon = 0.2
+        self.policy_fn = self.softmax_direction
 
     def next_step(self) -> bool:
         """ 
@@ -46,13 +41,7 @@ class Agent:
             self.prev_y = -1
             return True
 
-        # TODO: FIX me pls
-        direction = -1
-        if self.epsilon != 0:
-            direction = self.softmax_direction() # action selection mode
-        else:
-            direction = self.epsilon_greedy_direction()
-
+        direction = self.policy_fn()
         self.move(direction)
         self.update_qvalue(direction)
 

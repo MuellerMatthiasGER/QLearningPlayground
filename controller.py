@@ -21,3 +21,16 @@ class Controller:
         for _ in range(iterations):
             self.model.next_iteration()
         self.gui.update()
+
+    def change_policy(self, policy):
+        agent = self.model.agent
+        if policy == 'Softmax':
+            agent.policy_fn = agent.softmax_direction
+        elif policy == 'Epsilon-Greedy':
+            agent.policy_fn = agent.epsilon_greedy_direction
+        else:
+            print("ERROR: Invalid policy")
+
+    def reset(self):
+        self.model.reset()
+        self.gui.grid.draw()

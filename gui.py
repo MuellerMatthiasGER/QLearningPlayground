@@ -3,6 +3,7 @@ from tkinter import ttk
 from model import Model
 import shapes
 import numpy as np
+import colorsys
 
 CANVAS_MAX_WIDTH = 800
 CANVAS_MAX_HEIGHT = 500
@@ -79,28 +80,25 @@ class Grid(tk.Frame):
                     self.canvas.create_polygon(points, fill='#FD0')
                 elif tile == 'A':
                     self.canvas.create_rectangle(x, y, x + self.cell_size, y + self.cell_size, fill='#F00')
-
-def color_selector(self, text):
-        if np.isnan(text):
+                
+    def value_to_color(self, value, min_value, max_value):
+        if np.isnan(value):
             return "#FFFFFF"
-        else:
-            value_max = max(self.parent.model.env.rewards.values())
-            if text > value_max*9/10:
-                return "#00FF15"
-            elif text > value_max*4/10:
-                return "#D0FF00"
-            elif text > value_max*3/10:
-                return "#FFDD00"
-            elif text > value_max*2/10:
-                return "#FF9000"
-            elif text > value_max*1/10:
-                return "#FF5000"
-            elif text > value_max*-1/10:
-                return "#FF2E00"
-            else:
-                return "#FF0000"
+        
+        # Avoid divide by 0
+        if max_value == min_value:
+            max_value = min_value + 1
+
+        normalized_value = (value - min_value) / (max_value - min_value)
+        hue = int(normalized_value * 100)
+        rgb = colorsys.hsv_to_rgb(hue / 360, 1.0, 1.0)
+        rgb = tuple(int(x * 255) for x in rgb)
+        return "#{:02x}{:02x}{:02x}".format(*rgb)
     
     def draw_q(self):
+        max_value = np.nanmax(self.parent.model.agent.qtable, axis=None)
+        min_value = np.nanmin(self.parent.model.agent.qtable, axis=None)
+
         tiles = self.parent.model.env.tiles
         for row in range(tiles.shape[0]):
             for col in range(tiles.shape[1]):
@@ -114,29 +112,29 @@ def color_selector(self, text):
                     index_y = int(y/self.cell_size)
                     index_x = int(x/self.cell_size)
 
-                    text = qtable[index_y, index_x, 0]
-                    color = self.color_selector(text)
-                    if not np.isnan(text): #up
+                    q_value = qtable[index_y, index_x, 0]
+                    color = self.value_to_color(q_value, min_value, max_value)
+                    if not np.isnan(q_value): #up
                         self.canvas.create_rectangle(x+LINE_WIDTH+Q_RECT_WIDTH, y+LINE_WIDTH-1, x+self.cell_size-Q_RECT_WIDTH-LINE_WIDTH, y+LINE_WIDTH+Q_RECT_WIDTH, fill=color, outline=color)
-                        self.canvas.create_text(x+ (self.cell_size/2), y+7 , text=round(text, 2), fill="black")
+                        self.canvas.create_text(x+ (self.cell_size/2), y+7 , text=round(q_value, 2), fill="black")
 
-                    text = qtable[index_y, index_x, 1]
-                    color = self.color_selector(text)
-                    if not np.isnan(text): #right
+                    q_value = qtable[index_y, index_x, 1]
+                    color = self.value_to_color(q_value, min_value, max_value)
+                    if not np.isnan(q_value): #right
                         self.canvas.create_rectangle(x+self.cell_size-LINE_WIDTH+1, y+LINE_WIDTH+Q_RECT_WIDTH-1, x+self.cell_size-LINE_WIDTH-Q_RECT_WIDTH+1, y+self.cell_size-LINE_WIDTH-Q_RECT_WIDTH, fill=color, outline=color)
-                        self.canvas.create_text(x+self.cell_size - 7, y+ (self.cell_size/2), text="\n".join(str(round(text, 2))), fill="black")
+                        self.canvas.create_text(x+self.cell_size - 7, y+ (self.cell_size/2), text="\n".join(str(round(q_value, 2))), fill="black")
 
-                    text = qtable[index_y, index_x, 2]
-                    color = self.color_selector(text)
-                    if not np.isnan(text): #down
+                    q_value = qtable[index_y, index_x, 2]
+                    color = self.value_to_color(q_value, min_value, max_value)
+                    if not np.isnan(q_value): #down
                         self.canvas.create_rectangle(x+LINE_WIDTH+Q_RECT_WIDTH, y+self.cell_size-LINE_WIDTH+1, x+self.cell_size-Q_RECT_WIDTH-LINE_WIDTH, y+self.cell_size-LINE_WIDTH-Q_RECT_WIDTH+1, fill=color, outline=color)
-                        self.canvas.create_text(x+ (self.cell_size/2), y+ self.cell_size - 7 , text=round(text, 2), fill="black")
+                        self.canvas.create_text(x+ (self.cell_size/2), y+ self.cell_size - 7 , text=round(q_value, 2), fill="black")
 
-                    text = qtable[index_y, index_x, 3]
-                    color = self.color_selector(text)
-                    if not np.isnan(text): #left
+                    q_value = qtable[index_y, index_x, 3]
+                    color = self.value_to_color(q_value, min_value, max_value)
+                    if not np.isnan(q_value): #left
                         self.canvas.create_rectangle(x+LINE_WIDTH-1, y+LINE_WIDTH+Q_RECT_WIDTH-1, x+LINE_WIDTH+Q_RECT_WIDTH, y+self.cell_size-LINE_WIDTH-Q_RECT_WIDTH-1, fill=color, outline=color)
-                        self.canvas.create_text(x+ 7, y+ (self.cell_size/2), text="\n".join(str(round(text, 2))), fill="black")
+                        self.canvas.create_text(x+ 7, y+ (self.cell_size/2), text="\n".join(str(round(q_value, 2))), fill="black")
                         
                 else:
                     pass
@@ -144,13 +142,13 @@ def color_selector(self, text):
     def draw_agent(self):
         agent = self.parent.model.agent
         self.draw_figure(agent.y, agent.x, dash=None)
-        self.draw_figure(agent.prev_y, agent.prev_x, dash=(5, 3))
+        self.draw_figure(agent.prev_y, agent.prev_x, dash=(5, 3), color='gray')
 
-    def draw_figure(self, y, x, dash):
+    def draw_figure(self, y, x, dash, color='purple'):
         center_x = (x + 0.5) * self.cell_size
         center_y = (y + 0.5) * self.cell_size 
         radius = self.cell_size * 0.3
-        self.canvas.create_oval(center_x - radius, center_y - radius, center_x + radius, center_y + radius, width=LINE_WIDTH * 2, outline='purple', dash=dash)
+        self.canvas.create_oval(center_x - radius, center_y - radius, center_x + radius, center_y + radius, width=LINE_WIDTH * 2, outline=color, dash=dash)
 
     def draw_grid(self) -> None:
         # outline
@@ -176,16 +174,21 @@ class ControlPanel(tk.Frame):
         # ttk.Label(self, text="Columns:").grid(row=0, column=2)
         # ttk.Entry(self).grid(row=0, column=3)
 
+        tk.Label(self, text="Policy:").pack()
+        policy_dropdown = ttk.Combobox(self, values=["Softmax", "Epsilon-Greedy"])
+        policy_dropdown.set("Softmax")
+        policy_dropdown.bind("<<ComboboxSelected>>", lambda _: self.parent.controller.change_policy(policy_dropdown.get()))
+        policy_dropdown.pack()
+
         next_step_button = ttk.Button(self, text="Next Step", command=self.parent.controller.next_step)
         next_iter_button = ttk.Button(self, text="Next Iteration", command=lambda: self.parent.controller.execute_n_iterations(1))
+        next_ten_button = ttk.Button(self, text="10 Iteration", command=lambda: self.parent.controller.execute_n_iterations(10))
         next_thousand_button = ttk.Button(self, text="1000 Iteration", command=lambda: self.parent.controller.execute_n_iterations(1000))
-
-
-        ttk.Button(self, text="Show Q", command=lambda: print(self.parent.controller.model.agent.qtable)).pack()
-        ttk.Button(self, text="Show me baby", command=self.parent.controller.model.agent.reset_epsilon).pack()
-
 
         next_step_button.pack(side='top')
         next_iter_button.pack(side='top')
+        next_ten_button.pack(side='top')
         next_thousand_button.pack(side='top')
+
+        ttk.Button(self, text="Reset", command=self.parent.controller.reset).pack()
 

@@ -14,6 +14,9 @@ class Model:
         while not terminated:
             terminated = self.agent.next_step()
 
+    def reset(self):
+        self.agent = Agent(self.env)
+
 class Environment:
     def __init__(self, n_rows=5, n_cols=5) -> None:
         self.n_rows = n_rows
@@ -25,7 +28,7 @@ class Environment:
         self.tiles[0, 1:self.n_cols - 1] = '#'
         self.tiles[0, n_cols - 1] = 'G'
         self.tiles[n_rows - 1, n_cols - 1] = 'G'
-        self.rewards = {'-': -1, '#': -100, 'G': 50, 'A': 50}
+        self.rewards = {'-': -1, '#': -10, 'G': 10, 'A': 0}
         self.termination_tiles = ['#', 'G']
 
     def get_reward(self, y, x):
