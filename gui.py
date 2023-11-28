@@ -24,6 +24,21 @@ class App(tk.Frame):
     def update(self):
         self.grid.draw()
 
+class App(tk.Frame):
+    def __init__(self, parent, controller, model: Model, *args, **kwargs) -> None:
+        tk.Frame.__init__(self, parent, *args, **kwargs)
+        self.parent = parent
+        self.controller = controller
+        self.model = model
+
+        self.grid = Grid(self)
+        self.grid.pack(side='left', fill='both')
+
+        ControlPanel(self).pack(side='right', padx=10, pady=10)
+
+    def update(self):
+        self.grid.draw()
+
 class Grid(tk.Frame):
     def __init__(self, parent) -> None:
         tk.Frame.__init__(self, parent)
@@ -65,8 +80,7 @@ class Grid(tk.Frame):
                 elif tile == 'A':
                     self.canvas.create_rectangle(x, y, x + self.cell_size, y + self.cell_size, fill='#F00')
 
-    
-    def color_selector(self, text):
+def color_selector(self, text):
         if np.isnan(text):
             return "#FFFFFF"
         else:
@@ -126,8 +140,6 @@ class Grid(tk.Frame):
                         
                 else:
                     pass
-
-
 
     def draw_agent(self):
         agent = self.parent.model.agent
